@@ -120,10 +120,37 @@ with tab_tahmin:
 
     with col_b1:
         if st.button("🧪 Örnek Hasta Verisiyle Otomatik Doldur", use_container_width=True):
-            idx = random.randint(0, len(X_test_df) - 1)
-            st.session_state.sample_idx = idx
-            st.session_state.sample = X_test_df.iloc[idx].values
-            st.session_state.is_test_sample = True
+            try:
+                # 1. Rastgele bir indeks seç
+                idx = random.randint(0, len(X_test_df) - 1)
+                st.session_state.sample_idx = idx
+                
+                # 2. Seçilen satırı al
+                # values yaparak numpy array'e çeviriyoruz
+                raw_sample = X_test_df.iloc[idx].values
+                
+                # 3. Şekil (Shape) Kontrolü ve Düzenleme
+                # Eğer veride fazladan index sütunu varsa veya boyut uyumsuzsa düzelt
+                expected_features = scaler.n_features_in_  # Model kaç özellik bekliyor?
+                current_features = raw_sample.shape[0]     # Bizde kaç özellik var?
+
+                if current_features != expected_features:
+                    # Genelde fazladan sütun varsa sondan veya baştan kırpmak gerekebilir
+                    # Ancak burada sadece kullanıcıyı uyaralım veya reshape deneyelim
+                    st.error(f"⚠️ Boyut Hatası: Model {expected_features} özellik bekliyor, ancak CSV dosyasından {current_features} özellik geldi.")
+                else:
+                    scaled_sample = raw_sample.reshape(1, -1)
+                    
+                    # 4. Ölçeklemeyi GERİ AL (inverse_transform)
+                    original_sample = scaler.inverse_transform(scaled_sample)
+                    
+                    # 5. Session State'e kaydet
+                    st.session_state.sample = original_sample[0]
+                    st.session_state.is_test_sample = True
+                    st.success("✅ Veri başarıyla dolduruldu ve geri dönüştürüldü.")
+
+            except Exception as e:
+                st.error(f"❌ Bir hata oluştu: {e}")
 
     with col_b2:
         if st.button("🔄 Formu Sıfırla", use_container_width=True):
